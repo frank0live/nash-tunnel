@@ -1,0 +1,16 @@
+[Unit]
+Description=Nash Tunnel Panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=NASH_CONFIG=/etc/nash/config.json
+Environment=NASH_STATE=/etc/nash/panel.json
+ExecStart=/usr/bin/python3 /opt/nash-panel/panel.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

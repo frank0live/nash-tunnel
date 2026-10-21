@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Nash watchdog every 60s
+
+[Timer]
+OnBootSec=45
+OnUnitActiveSec=60
+AccuracySec=5s
+Unit=nash-watchdog.service
+
+[Install]
+WantedBy=timers.target

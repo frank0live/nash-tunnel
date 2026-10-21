@@ -1,0 +1,17 @@
+[Unit]
+Description=Nash GRE tunnel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=-/sbin/modprobe ip_gre
+ExecStartPre=-/sbin/ip link del nash-gre
+ExecStart=/sbin/ip link add nash-gre type gre local 0.0.0.0 remote PEER_IP ttl 255 key KEY
+ExecStart=/sbin/ip addr add 10.66.66.1/30 dev nash-gre
+ExecStart=/sbin/ip link set nash-gre mtu 1400 up
+ExecStop=-/sbin/ip link del nash-gre
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nash Tunnel Panel</title>
+<style>
+:root{
+  --bg:#0b0f16; --card:#121826; --card2:#0f1420; --line:#1e2739;
+  --txt:#e6edf7; --dim:#8b9ab3; --acc:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#15233a 0%,var(--bg) 55%);
+  color:var(--txt);font-family:"Vazirmatn",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+a{color:var(--acc);text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#6366f1);
+  display:grid;place-items:center;font-weight:800;font-size:18px;color:#04121f}
+h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
+.sub{color:var(--dim);font-size:12px;margin-top:2px}
+.spacer{flex:1}
+.pill{border:1px solid var(--line);background:var(--card2);padding:6px 11px;border-radius:999px;
+  font-size:12px;color:var(--dim);display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.dot.ok{background:var(--ok);box-shadow:0 0 10px #22c55e88}
+.dot.bad{background:var(--bad);box-shadow:0 0 10px #ef444488}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);
+  border-radius:16px;padding:16px}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--dim);font-weight:600;letter-spacing:.3px}
+.big{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.mono{font-variant-numeric:tabular-nums}
+.bar{height:7px;border-radius:99px;background:#1c2434;overflow:hidden;margin-top:10px}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#38bdf8,#6366f1)}
+.bar.warn>i{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed #1b2334;font-size:13px}
+.row:last-child{border-bottom:0}
+.row .k{color:var(--dim)}
+.tag{font-size:11px;padding:3px 8px;border-radius:7px;border:1px solid var(--line)}
+.tag.ok{color:#86efac;border-color:#14532d;background:#052e16}
+.tag.bad{color:#fca5a5;border-color:#7f1d1d;background:#2a0a0a}
+.tag.idle{color:#cbd5e1;border-color:#334155;background:#0f172a}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+button{cursor:pointer;border:1px solid var(--line);background:#16203300;color:var(--txt);
+  padding:9px 13px;border-radius:10px;font-size:12.5px;font-family:inherit;transition:.15s}
+button:hover{border-color:#2f4260;background:#162033}
+button.pri{background:linear-gradient(135deg,#0ea5e9,#6366f1);border:0;color:#04121f;font-weight:700}
+button.danger:hover{border-color:#7f1d1d;background:#2a0a0a;color:#fca5a5}
+pre{background:#080c13;border:1px solid var(--line);border-radius:12px;padding:12px;
+  overflow:auto;max-height:280px;font-size:11.5px;line-height:1.6;color:#a8b7cc;direction:ltr;text-align:left}
+.muted{color:var(--dim);font-size:12px}
+#login{position:fixed;inset:0;background:#060a10ee;display:grid;place-items:center;z-index:50;backdrop-filter:blur(6px)}
+#login .box{width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);
+  background:#0a0f18;color:var(--txt);font-family:inherit;font-size:14px;margin:10px 0 14px}
+input:focus{outline:none;border-color:#2b4a6f}
+.err{color:#fca5a5;font-size:12px;min-height:16px}
+.hidden{display:none!important}
+footer{margin-top:26px;color:#4d5b70;font-size:11.5px;text-align:center}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="box">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
+      <div class="logo" style="width:32px;height:32px;font-size:14px">N</div>
+      <div><b>Nash Tunnel</b><div class="muted">ورود به پنل</div></div>
+    </div>
+    <input id="pw" type="password" placeholder="رمز عبور" autocomplete="current-password">
+    <div class="err" id="lerr"></div>
+    <button class="pri" style="width:100%" onclick="login()">ورود</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">N</div>
+    <div>
+      <h1 id="title">Nash Tunnel</h1>
+      <div class="sub" id="sub">در حال بارگذاری…</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill"><span class="dot" id="d-net"></span><span id="t-net">شبکه</span></div>
+    <div class="pill"><span class="dot" id="d-gre"></span><span id="t-gre">تونل GRE</span></div>
+    <div class="pill" onclick="logout()" style="cursor:pointer">خروج</div>
+  </header>
+
+  <div class="grid" style="margin-bottom:14px">
+    <div class="card">
+      <h3>CPU</h3>
+      <div class="big mono"><span id="cpu">–</span><span style="font-size:14px;color:var(--dim)">%</span></div>
+      <div class="bar" id="cpu-bar"><i style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <h3>حافظه</h3>
+      <div class="big mono"><span id="mem-p">–</span><span style="font-size:14px;color:var(--dim)">%</span></div>
+      <div class="muted mono" id="mem-t">–</div>
+      <div class="bar" id="mem-bar"><i style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <h3>دیسک</h3>
+      <div class="big mono"><span id="disk-p">–</span><span style="font-size:14px;color:var(--dim)">%</span></div>
+      <div class="muted mono" id="disk-t">–</div>
+      <div class="bar" id="disk-bar"><i style="width:0"></i></div>
+    </div>
+    <div class="card">
+      <h3>آپتایم</h3>
+      <div class="big mono" id="uptime">–</div>
+      <div class="muted" id="clock">–</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>سرویس‌ها</h3>
+      <div id="units"></div>
+      <div class="actions">
+        <button onclick="act('restart-frp')">ریستارت FRP</button>
+        <button onclick="act('restart-xray')">ریستارت Xray</button>
+        <button onclick="act('restart-gre')">ریستارت GRE</button>
+        <button onclick="act('restart-panel')" class="danger">ریستارت پنل</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>نودها <span class="muted" id="nodes-count"></span></h3>
+      <div id="nodes"><div class="muted">نودی تنظیم نشده</div></div>
+      <div class="actions">
+        <button onclick="refresh()">تست مجدد</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>لاگ‌ها</h3>
+      <div class="actions" style="margin-bottom:10px">
+        <button onclick="loadLog('nash-frpc')">FRP</button>
+        <button onclick="loadLog('nash-xray')">Xray</button>
+        <button onclick="loadLog('nash-watchdog')">Watchdog</button>
+        <button onclick="loadLog('nash-panel')">Panel</button>
+      </div>
+      <pre id="log">—</pre>
+    </div>
+  </div>
+
+  <footer>Nash Tunnel Panel v<span id="ver">1.0.0</span> · ساخته‌شده برای مدیریت تونل GRE + FRP + Backhaul</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let timer = null;
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, {credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, ...opts});
+  if (r.status === 401) { showLogin(); throw new Error('unauthorized'); }
+  return r.json();
+}
+
+function showLogin(){ $('login').classList.remove('hidden'); }
+function hideLogin(){ $('login').classList.add('hidden'); }
+
+async function login(){
+  const pw = $('pw').value;
+  $('lerr').textContent = '';
+  const r = await fetch('/api/login', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw})});
+  if (!r.ok) { $('lerr').textContent = 'رمز اشتباه است'; return; }
+  hideLogin(); refresh(); startTimer();
+}
+
+async function logout(){
+  await fetch('/api/logout', {method:'POST'});
+  showLogin();
+  if (timer) clearInterval(timer);
+}
+
+function pct(id, v){
+  const bar = $(id);
+  bar.querySelector('i').style.width = Math.min(100, v) + '%';
+  bar.classList.toggle('warn', v > 85);
+}
+
+function tag(state){
+  const ok = state === 'active';
+  return `<span class="tag ${ok?'ok':'bad'}">${state}</span>`;
+}
+
+async function refresh(){
+  try {
+    const d = await api('/api/status');
+    $('title').textContent = 'Nash Tunnel — ' + (d.role === 'iran' ? 'سرور ایران' : 'سرور خارج');
+    $('sub').textContent = d.hostname + ' · ' + d.role;
+    $('ver').textContent = d.version;
+
+    $('cpu').textContent = d.cpu;
+    pct('cpu-bar', d.cpu);
+    $('mem-p').textContent = d.mem.percent;
+    $('mem-t').textContent = d.mem.used_mb + ' / ' + d.mem.total_mb + ' MB';
+    pct('mem-bar', d.mem.percent);
+    $('disk-p').textContent = d.disk.percent;
+    $('disk-t').textContent = d.disk.used_gb + ' / ' + d.disk.total_gb + ' GB';
+    pct('disk-bar', d.disk.percent);
+    $('uptime').textContent = d.uptime;
+    $('clock').textContent = d.time;
+
+    $('d-net').className = 'dot ok';
+    $('t-net').textContent = 'آنلاین';
+    $('d-gre').className = 'dot ' + (d.gre.up ? 'ok' : 'bad');
+    $('t-gre').textContent = d.gre.up ? 'GRE فعال' : 'GRE قطع';
+
+    $('units').innerHTML = Object.entries(d.units).map(([k,v]) =>
+      `<div class="row"><span class="k">${k}</span>${tag(v)}</div>`).join('');
+
+    const n = d.nodes;
+    $('nodes-count').textContent = `(${n.healthy}/${n.total} سالم)`;
+    $('nodes').innerHTML = n.items.length ? n.items.map(x =>
+      `<div class="row"><span>${x.name} <span class="muted">${x.host}${x.port?':'+x.port:''}</span></span>
+       <span>${x.ok ? `<span class="tag ok">${x.latency_ms ?? '–'} ms</span>` : '<span class="tag bad">قطع</span>'}</span></div>`
+    ).join('') : '<div class="muted">نودی تنظیم نشده</div>';
+  } catch (e) { /* handled by api() */ }
+}
+
+async function act(name){
+  try {
+    const r = await api('/api/action', {method:'POST', body: JSON.stringify({action:name})});
+    if (!r.ok) alert('خطا: ' + (r.out || r.error || ''));
+    refresh();
+  } catch(e){}
+}
+
+async function loadLog(unit){
+  try {
+    const d = await api('/api/logs?unit=' + encodeURIComponent(unit));
+    $('log').textContent = d.log || '—';
+  } catch(e){}
+}
+
+function startTimer(){ if (timer) clearInterval(timer); timer = setInterval(refresh, 5000); }
+
+(async function boot(){
+  try {
+    const r = await fetch('/api/status', {credentials:'same-origin'});
+    if (r.ok) { hideLogin(); await refresh(); startTimer(); }
+    else showLogin();
+  } catch(e){ showLogin(); }
+  $('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+})();
+</script>
+</body>
+</html>
