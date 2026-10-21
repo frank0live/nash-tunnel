@@ -18,13 +18,13 @@
 ## نصب سریع
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<user>/nash-tunnel/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/frank0live/nash-tunnel/main/install.sh | bash
 ```
 
 یا دستی:
 
 ```bash
-git clone https://github.com/<user>/nash-tunnel.git
+git clone https://github.com/frank0live/nash-tunnel.git
 cd nash-tunnel
 bash nash.sh          # منوی تعاملی
 ```
