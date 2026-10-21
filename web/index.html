@@ -13,7 +13,7 @@
 body{margin:0;background:radial-gradient(1200px 600px at 80% -10%,#15233a 0%,var(--bg) 55%);
   color:var(--txt);font-family:"Vazirmatn",system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
 a{color:var(--acc);text-decoration:none}
-.wrap{max-width:1180px;margin:0 auto;padding:22px 16px 60px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 16px 24px}
 header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
 .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#6366f1);
   display:grid;place-items:center;font-weight:800;font-size:18px;color:#04121f}
@@ -41,14 +41,16 @@ h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
 .tag.ok{color:#86efac;border-color:#14532d;background:#052e16}
 .tag.bad{color:#fca5a5;border-color:#7f1d1d;background:#2a0a0a}
 .tag.idle{color:#cbd5e1;border-color:#334155;background:#0f172a}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.actions button{width:100%}
 button{cursor:pointer;border:1px solid var(--line);background:#16203300;color:var(--txt);
   padding:9px 13px;border-radius:10px;font-size:12.5px;font-family:inherit;transition:.15s}
 button:hover{border-color:#2f4260;background:#162033}
 button.pri{background:linear-gradient(135deg,#0ea5e9,#6366f1);border:0;color:#04121f;font-weight:700}
 button.danger:hover{border-color:#7f1d1d;background:#2a0a0a;color:#fca5a5}
 pre{background:#080c13;border:1px solid var(--line);border-radius:12px;padding:12px;
-  overflow:auto;max-height:280px;font-size:11.5px;line-height:1.6;color:#a8b7cc;direction:ltr;text-align:left}
+  overflow-y:auto;overflow-x:hidden;max-height:300px;font-size:11px;line-height:1.65;color:#a8b7cc;
+  direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-all}
 .muted{color:var(--dim);font-size:12px}
 #login{position:fixed;inset:0;background:#060a10ee;display:grid;place-items:center;z-index:50;backdrop-filter:blur(6px)}
 #login .box{width:min(360px,92vw);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
@@ -95,13 +97,13 @@ footer{margin-top:26px;color:#4d5b70;font-size:11.5px;text-align:center}
     <div class="card">
       <h3>حافظه</h3>
       <div class="big mono"><span id="mem-p">–</span><span style="font-size:14px;color:var(--dim)">%</span></div>
-      <div class="muted mono" id="mem-t">–</div>
+      <div class="muted mono" id="mem-t" dir="ltr">–</div>
       <div class="bar" id="mem-bar"><i style="width:0"></i></div>
     </div>
     <div class="card">
       <h3>دیسک</h3>
       <div class="big mono"><span id="disk-p">–</span><span style="font-size:14px;color:var(--dim)">%</span></div>
-      <div class="muted mono" id="disk-t">–</div>
+      <div class="muted mono" id="disk-t" dir="ltr">–</div>
       <div class="bar" id="disk-bar"><i style="width:0"></i></div>
     </div>
     <div class="card">

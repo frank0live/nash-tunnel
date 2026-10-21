@@ -406,7 +406,34 @@ class Handler(BaseHTTPRequestHandler):
         return self._send(404, {"error": "not found"})
 
 
+def demo_status():
+    """Static snapshot used only for README screenshots (NASH_DEMO=1)."""
+    c = cfg()
+    nodes = [
+        {"name": "frankfurt", "host": "49.12.88.14", "port": 22, "ok": True, "latency_ms": 42, "loss": None},
+        {"name": "amsterdam", "host": "188.166.7.92", "port": 22, "ok": True, "latency_ms": 58, "loss": None},
+        {"name": "istanbul", "host": "185.125.44.31", "port": 22, "ok": True, "latency_ms": 71, "loss": None},
+        {"name": "frankfurt-2", "host": "5.9.140.77", "port": 22, "ok": False, "latency_ms": None, "loss": None},
+    ]
+    return {
+        "version": VERSION,
+        "role": c.get("role", "iran"),
+        "hostname": "iran-edge-01",
+        "uptime": "27d 6h 41m",
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "cpu": 12.4,
+        "mem": {"total_mb": 3915, "used_mb": 1288, "percent": 32.9},
+        "disk": {"total_gb": 78.2, "used_gb": 19.6, "percent": 25.1},
+        "gre": {"iface": c.get("gre_iface", "nash-gre"), "up": True},
+        "units": {"panel": "active", "frp": "active", "xray": "active", "watchdog": "active"},
+        "restarts": {"frp": 0, "xray": 1},
+        "nodes": {"total": len(nodes), "healthy": sum(1 for n in nodes if n["ok"]), "items": nodes},
+    }
+
+
 def build_status():
+    if os.environ.get("NASH_DEMO") == "1":
+        return demo_status()
     c = cfg()
     iface = c.get("gre_iface", "gre-tunnel")
     nodes = [node_health(n) for n in c.get("nodes", [])]
