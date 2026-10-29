@@ -19,7 +19,7 @@
 # ==============================================================================
 set -uo pipefail
 
-VERSION="1.0.1"
+VERSION="1.0.2"
 SELF="$(readlink -f "$0")"
 SRC_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 
@@ -337,7 +337,14 @@ backhaul_server() {
       }
     }
   }],
-  "outbounds": [{"protocol": "freedom"}]
+  "outbounds": [{
+    "protocol": "freedom",
+    "settings": {
+      "finalRules": [
+        {"action": "allow", "network": "tcp", "ip": ["127.0.0.1/32", "::1/128"]}
+      ]
+    }
+  }]
 }
 EOF
   cat >/etc/systemd/system/nash-backhaul.service <<EOF

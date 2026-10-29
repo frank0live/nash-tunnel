@@ -127,9 +127,61 @@ ip -d link show nash-gre | grep ikey  # کلید فعال اینترفیس
 **`Job for nash-backhaul.service failed` یا `invalid "shortIds[0]"`**
 shortId باید هگز باشه (`0-9a-f`)، کانفیگ رو دوباره بساز (گزینه ۴ منو).
 
+**پینگ TCP برمیگرده ولی ترافیک واقعی رد نمیشه (Real Delay = `-1ms` / timeout)**
+
+توی معماری Relay/Core وقتی سمت خارج به یه سرویس روی **لوکالهاست خودش** فوروارد
+میکنی (پنل 3x-ui، sshd، nginx) و پنل هیچ درخواستی ثبت نمیکنه — این رفتار خود
+Xray-core است، نه کانفیگ تو:
+
+از Xray **v26.4.17** به بعد (PR [#5947](https://github.com/XTLS/Xray-core/pull/5947))
+خروجی `freedom` بهصورت پیشفرض ترافیک به آدرسهای **private/reserved** (از جمله
+`127.0.0.1`) رو **blackhole** میکنه — سیاست امنیتی پیشفرض در برابر SSRF. پس تونل
+REALITY سالمه، پکت به `127.0.0.1:2053` سرور خارج میرسه، ولی freedom قبل از dial
+پکت رو میندازه و با `loglevel: warning` هیچی هم لاگ نمیشه:
+
+```
+proxy/freedom: blocked target: tcp:127.0.0.1:2053, blackholing connection for 47s
+```
+
+این خط فقط با `"loglevel": "info"` دیده میشه — دلیل اینکه «اتصال هست ولی دیتا
+نیست».
+
+مقصد `dokodemo-door` در سمت ایران هم در **انتهای تونل** (سرور خارج) تفسیر میشه،
+پس `127.0.0.1` یعنی لوکالهاست سرور خارج و همین درسته؛ نیاز نیست IP عمومی خارج
+رو بذاری.
+
+از نسخهٔ ۱.۰.۲ اسکریپت این بلاک رو باز میکنه، پس اگه با نسخهٔ قدیمیتر کانفیگ
+ساختی، سمت خارج `server.json` رو دوباره بساز:
+
+```bash
+bash nash.sh backhaul            # کانفیگ رو با finalRules جدید دوباره میسازه
+systemctl restart nash-backhaul
+```
+
+اگه خودت دستی میخوای اضافهش کنی، `outbounds` سمت خارج باید این شکل باشه:
+
+```json
+"outbounds": [{
+  "protocol": "freedom",
+  "settings": {
+    "finalRules": [
+      {"action": "allow", "network": "tcp", "ip": ["127.0.0.1/32", "::1/128"]}
+    ]
+  }
+}]
+```
+
+برای اینکه ببینی واقعاً مشکل همینه، موقتاً لاگ رو باز کن:
+
+```bash
+sed -i 's/"loglevel": "warning"/"loglevel": "info"/' /etc/nash/backhaul/server.json
+systemctl restart nash-backhaul && journalctl -u nash-backhaul -f
+```
+
 ## Support
 
 - 💬 Telegram: [@master_supports](https://t.me/master_supports)
+
 ## لایسنس
 
 MIT — آزاد برای استفاده شخصی و تجاری.
