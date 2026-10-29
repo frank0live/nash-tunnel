@@ -127,6 +127,9 @@ ip -d link show nash-gre | grep ikey  # کلید فعال اینترفیس
 **`Job for nash-backhaul.service failed` یا `invalid "shortIds[0]"`**
 shortId باید هگز باشه (`0-9a-f`)، کانفیگ رو دوباره بساز (گزینه ۴ منو).
 
+## Support
+
+- 💬 Telegram: [@master_supports](https://t.me/master_supports)
 ## لایسنس
 
 MIT — آزاد برای استفاده شخصی و تجاری.
