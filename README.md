@@ -75,7 +75,7 @@ panel/panel.py          بکاند پنل (پایتون stdlib، بدون واب
 web/index.html          فرانت پنل (تکفایل، RTL)
 systemd/                یونیتهای نمونه
 /etc/nash/config.json   تنظیمات (پورت، نودها، تلگرام)
-/etc/nash/panel.json    هش رمز و سشنها
+/etc/nash/panel.json    هش رمز و سشن‌ها
 /etc/nash/frps.toml     تنظیمات FRP server
 /etc/nash/frpc.toml     تنظیمات FRP client
 /etc/nash/backhaul/     کانفیگهای Xray
@@ -115,7 +115,7 @@ bash nash.sh install-foreign
 
 ```bash
 rm -f /etc/nash/gre.key
-bash nash.sh install-iran      # کلید عددی جدید چاپ میشود
+bash nash.sh install-iran      # کلید عددی جدید چاپ می‌شود
 ```
 
 سپس در سرور خارج همان کلید را وارد کنید. مقدار آن در دو سرور باید یکسان باشد،
@@ -130,7 +130,7 @@ ip -d link show nash-gre | grep ikey  # کلید فعال اینترفیس
 
 shortId باید هگز باشد (`0-9a-f`). کانفیگ را از گزینه ۴ منو دوباره بساز.
 
-### پینگ TCP برمیگردد ولی دیتا رد نمی‌شود (Real Delay روی `-1ms`)
+### پینگ TCP برمی‌گردد ولی دیتا رد نمی‌شود (Real Delay روی `-1ms`)
 
 اگر ترافیک را در سرور خارج به سرویسی روی لوکالهاست همان سرور فوروارد می‌کنید (پنل
 3x-ui، sshd، nginx) و آن سرویس هیچ درخواستی ثبت نمی‌کند، مشکل از کانفیگ شما نیست.
