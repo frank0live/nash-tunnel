@@ -19,7 +19,7 @@
 # ==============================================================================
 set -uo pipefail
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 SELF="$(readlink -f "$0")"
 SRC_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 
@@ -49,6 +49,17 @@ need_root() {
 have() { command -v "$1" >/dev/null 2>&1; }
 
 rand() { head -c 24 /dev/urandom | base64 | tr -d '/+=' | cut -c1-"${1:-24}"; }
+
+# digits only - ip link wants an integer for the GRE key
+rand_num() {
+  local n
+  n=$(od -An -N4 -tu4 /dev/urandom 2>/dev/null | tr -d ' \n')
+  [[ "$n" =~ ^[0-9]+$ ]] || n=$(( (RANDOM << 15 | RANDOM) % 4294967294 ))
+  printf '%s' "$(( n % 4294967294 + 1 ))"
+}
+
+# hex only, that is what a REALITY shortId has to be
+rand_hex() { od -An -N16 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' | cut -c1-"${1:-16}"; }
 
 detect_arch() {
   case "$(uname -m)" in
@@ -106,14 +117,23 @@ install_frp() {
 # ---------------------------------------------------------------- GRE
 gre_key() {
   mkdir -p "$CONF_DIR"; chmod 700 "$CONF_DIR"
-  [[ -s "$GRE_KEY_FILE" ]] || rand 12 > "$GRE_KEY_FILE"
+  # rebuild it if it is missing or still holds an old non-numeric key
+  if [[ ! -s "$GRE_KEY_FILE" ]] || ! grep -qE '^[0-9]+$' "$GRE_KEY_FILE"; then
+    rand_num > "$GRE_KEY_FILE"
+  fi
   chmod 600 "$GRE_KEY_FILE"
   cat "$GRE_KEY_FILE"
 }
 
 write_gre_unit() {
-  local mode="$1" peer="$2" local_ip="$3" remote_ip="$4" key
-  key=$(gre_key)
+  local mode="$1" peer="$2" local_ip="$3" remote_ip="$4" key="${5:-}"
+  # both ends have to use the same key, so take the one we are handed
+  if [[ -n "$key" ]]; then
+    printf '%s\n' "$key" > "$GRE_KEY_FILE"; chmod 600 "$GRE_KEY_FILE"
+  else
+    key=$(gre_key)
+  fi
+  [[ "$key" =~ ^[0-9]+$ ]] || { err "GRE key must be digits only (got: '$key')"; return 1; }
   cat >/etc/systemd/system/nash-gre.service <<EOF
 [Unit]
 Description=Nash GRE tunnel ($mode)
@@ -300,7 +320,7 @@ backhaul_server() {
   priv=$(/usr/local/bin/xray x25519 2>/dev/null | awk '/Private/{print $NF}')
   pub=$(/usr/local/bin/xray x25519 -i "$priv" 2>/dev/null | awk '/Public/{print $NF}')
   [[ -z "$pub" ]] && { err "x25519 failed"; return 1; }
-  local sid; sid=$(rand 8)
+  local sid; sid=$(rand_hex 16)
 
   cat >"$BACKHAUL_DIR/server.json" <<EOF
 {
@@ -416,6 +436,10 @@ EOF
 # ---------------------------------------------------------------- watchdog
 install_watchdog() {
   step "Installing watchdog"
+  # the watchdog shells out to $INSTALL_DIR/nash.sh, so keep a copy there
+  if [[ -f "$SELF" && "$SELF" != "$INSTALL_DIR/nash.sh" ]]; then
+    install -m 755 "$SELF" "$INSTALL_DIR/nash.sh"
+  fi
   cat >"$INSTALL_DIR/nash-watchdog" <<'WDE'
 #!/usr/bin/env bash
 # Nash watchdog — checks units + tunnel, restarts what's down, alerts via telegram.
@@ -629,12 +653,26 @@ uninstall_all() {
   systemctl daemon-reload
   ip link del "$GRE_IF" >/dev/null 2>&1 || true
   rm -rf /opt/nash-panel "$CONF_DIR"
-  rm -f "$INSTALL_DIR/frps" "$INSTALL_DIR/frpc" "$INSTALL_DIR/nash-watchdog"
+  rm -f "$INSTALL_DIR/frps" "$INSTALL_DIR/frpc" "$INSTALL_DIR/nash-watchdog" "$INSTALL_DIR/nash.sh"
   ok "removed (xray itself left in place)"
 }
 
 # ---------------------------------------------------------------- menu
 menu() {
+  # stdin is a drained pipe when the script comes in through curl|bash,
+  # reads fail straight away and the menu loops forever, so grab the tty
+  if [[ ! -t 0 ]]; then
+    # in a subshell, or a missing /dev/tty prints an error
+    if (exec 0</dev/tty) 2>/dev/null; then
+      exec 0</dev/tty
+    else
+      say "no tty on stdin (piped install?)"
+      say "run it non-interactively instead:"
+      say "  bash $SELF status"
+      say "  bash $SELF install-iran | install-foreign | watchdog | benchmark"
+      exit 2
+    fi
+  fi
   while true; do
     say ""
     say "${C_B}┌─ Nash Tunnel $VERSION ────────────────────────┐${C_N}"
@@ -692,13 +730,24 @@ cmd_install_iran() {
   local pubip; pubip=$(public_ip)
   read -rp "foreign server IP (GRE peer): " peer
   [[ -n "$peer" ]] || { err "peer required"; return 1; }
-  write_gre_unit "iran" "$peer" "$pubip" "$GRE_IRAN_IP" || return 1
+  local grekey; grekey=$(gre_key)
+  write_gre_unit "iran" "$peer" "$pubip" "$GRE_IRAN_IP" "$grekey" || return 1
   ok "GRE up: $pubip <-> $peer"
+  say ""
+  say "  ${C_B}GRE key: $grekey${C_N}"
+  say "  ${C_DIM}use the same key on the FOREIGN node${C_N}"
   local bindp; read -rp "frps bind port [7000]: " bindp; bindp=${bindp:-7000}
   install_frp iran || return 1
-  write_frps "$bindp"
+  local frptok; frptok=$(rand 20)
+  write_frps "$bindp" "$frptok"
   install_panel iran 8090
   install_watchdog
+  say ""
+  say "  ${C_B}--- FOREIGN node settings ---${C_N}"
+  say "  iran IP     : $pubip"
+  say "  GRE key     : $grekey"
+  say "  frps port   : $bindp"
+  say "  frp token   : $frptok"
   status_report
 }
 
@@ -708,7 +757,10 @@ cmd_install_foreign() {
   local pubip; pubip=$(public_ip)
   read -rp "iran server IP (GRE peer): " peer
   [[ -n "$peer" ]] || { err "peer required"; return 1; }
-  write_gre_unit "foreign" "$peer" "$pubip" "$GRE_FOREIGN_IP" || return 1
+  local grekey
+  read -rp "GRE key from the IRAN server: " grekey
+  [[ "$grekey" =~ ^[0-9]+$ ]] || { err "GRE key must be digits (copy it from IRAN)"; return 1; }
+  write_gre_unit "foreign" "$peer" "$pubip" "$GRE_FOREIGN_IP" "$grekey" || return 1
   ok "GRE up: $pubip <-> $peer"
   local srv bp tok
   read -rp "iran server IP for frpc [same as peer]: " srv; srv=${srv:-$peer}

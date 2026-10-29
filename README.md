@@ -26,6 +26,9 @@
 curl -fsSL https://raw.githubusercontent.com/frank0live/nash-tunnel/main/install.sh | bash
 ```
 
+> اگه نصب یک‌خطی رو از داخل یه اسکریپت اجرا کنی و ترمینال نداشته باشی، اسکریپت
+> به‌جای گیر کردن، دستورای غیرتعاملی رو نشون می‌ده.
+
 یا دستی:
 
 ```bash
@@ -91,6 +94,38 @@ systemd/                یونیت‌های نمونه
 ```bash
 ufw allow from YOUR_IP to any port 8090
 ```
+
+## عیب‌یابی
+
+**منو فقط `! invalid choice` چاپ می‌کنه و لوپ می‌شه**
+یعنی stdin به ترمینال وصل نیست (مثلاً `curl … | bash` یا اجرا از داخل یه ابزار).
+از ۱.۰.۱ اسکریپت خودش به `/dev/tty` وصل می‌شه. اگه ترمینالی نبود، از دستورای
+غیرتعاملی استفاده کن:
+
+```bash
+bash nash.sh status
+bash nash.sh install-iran
+bash nash.sh install-foreign
+```
+
+**`Job for nash-gre.service failed … invalid value for "key"`**
+کلید تونل باید عدد باشه. تو نسخه‌های قدیمی با حروف ساخته می‌شد. بازتولیدش کن:
+
+```bash
+rm -f /etc/nash/gre.key
+bash nash.sh install-iran      # کلید عددی جدید چاپ می‌شه
+```
+
+بعد تو سرور خارج **همون** کلید رو بزن. دو طرف باید یکی باشن وگرنه تونل بالا میاد ولی
+ترافیک رد نمی‌شه:
+
+```bash
+cat /etc/nash/gre.key                 # باید تو دو سرور یکی باشه
+ip -d link show nash-gre | grep ikey  # کلید فعال اینترفیس
+```
+
+**`Job for nash-backhaul.service failed` یا `invalid "shortIds[0]"`**
+shortId باید هگز باشه (`0-9a-f`)، کانفیگ رو دوباره بساز (گزینه ۴ منو).
 
 ## لایسنس
 
