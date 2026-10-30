@@ -347,6 +347,7 @@ backhaul_server() {
   }]
 }
 EOF
+  chmod 600 "$BACKHAUL_DIR/server.json"   # holds the REALITY private key
   cat >/etc/systemd/system/nash-backhaul.service <<EOF
 [Unit]
 Description=Nash Backhaul (xray server)
@@ -417,6 +418,7 @@ backhaul_client() {
   }]
 }
 EOF
+  chmod 600 "$BACKHAUL_DIR/client.json"
   cat >/etc/systemd/system/nash-backhaul.service <<EOF
 [Unit]
 Description=Nash Backhaul (xray client)
