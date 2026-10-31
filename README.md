@@ -87,8 +87,11 @@ bash nash.sh          # اجرای منوی تعاملی
 | دستور | عملکرد |
 |---|---|
 | `bash nash.sh status` | نمایش گزارش کامل سلامت سرور (CPU، RAM، دیسک، وضعیت سرویس‌ها و تونل) |
-| `bash nash.sh install-iran` | نصب و راه‌اندازی سمت سرور ایران (GRE Server + `frps` + پنل وب) |
-| `bash nash.sh install-foreign` | نصب و راه‌اندازی سمت سرور خارج (GRE Client + `frpc` + پنل وب) |
+| `bash nash.sh install-iran` | نصب و راهاندازی سمت سرور ایران (GRE Server + `frps` + پنل وب) |
+| `bash nash.sh install-foreign` | نصب و راهاندازی سمت سرور خارج (GRE Client + `frpc` + پنل وب) |
+| `bash nash.sh install-iran --peer IP --key N --port P --token S` | همان نصب ایران بهصورت غیرتعاملی |
+| `bash nash.sh install-foreign --peer IP --key N --token S` | همان نصب خارج بهصورت غیرتعاملی |
+| `bash nash.sh panel-install [iran\|foreign] [port]` | نصب پنل وب جدا از نصب کامل |
 | `bash nash.sh backhaul` | پیکربندی سمت سرور Backhaul (مبتنی بر Xray REALITY) |
 | `bash nash.sh backhaul-client ...` | پیکربندی سمت کلاینت Backhaul |
 | `bash nash.sh watchdog` | نصب و بازنشانی سرویس واچ‌داگ (بررسی در بازه‌های ۶۰ ثانیه‌ای) |

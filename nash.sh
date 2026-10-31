@@ -19,7 +19,7 @@
 # ==============================================================================
 set -uo pipefail
 
-VERSION="1.0.2"
+VERSION="1.0.3"
 SELF="$(readlink -f "$0")"
 SRC_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 
@@ -94,11 +94,13 @@ install_deps() {
 
 # ---------------------------------------------------------------- FRP binaries
 install_frp() {
-  local role="$1" arch ver
+  local role="$1" arch ver want
   arch=$(detect_arch)
   ver="${FRP_VERSION:-0.61.1}"
-  if [[ -x "$INSTALL_DIR/frps" && -x "$INSTALL_DIR/frpc" ]]; then
-    ok "frp already installed"
+  # only the binary this role actually runs is required, but keep both if present
+  want="frpc"; [[ "$role" == iran ]] && want="frps"
+  if [[ -x "$INSTALL_DIR/$want" ]]; then
+    ok "frp already installed ($want)"
     return 0
   fi
   step "Downloading FRP $ver ($arch)"
@@ -111,6 +113,7 @@ install_frp() {
   install -m 755 "$tmp"/frp_*/frps "$INSTALL_DIR/frps"
   install -m 755 "$tmp"/frp_*/frpc "$INSTALL_DIR/frpc"
   rm -rf "$tmp"
+  [[ -x "$INSTALL_DIR/$want" ]] || { err "$want still missing after install"; return 1; }
   ok "frp installed"
 }
 
@@ -733,21 +736,36 @@ PY
 }
 
 # ---------------------------------------------------------------- commands
+# usage: install-iran [--peer IP] [--key N] [--port N] [--token STR]
+#       without flags it asks interactively, with all flags it runs unattended
 cmd_install_iran() {
   need_root; install_deps
   step "IRAN server setup"
   local pubip; pubip=$(public_ip)
-  read -rp "foreign server IP (GRE peer): " peer
+  local peer="" grekey="" bindp="" frptok=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --peer)  peer="$2"; shift 2 ;;
+      --key)   grekey="$2"; shift 2 ;;
+      --port)  bindp="$2"; shift 2 ;;
+      --token) frptok="$2"; shift 2 ;;
+      *) err "unknown flag: $1"; return 1 ;;
+    esac
+  done
+  if [[ -z "$peer" ]]; then
+    read -rp "foreign server IP (GRE peer): " peer
+  fi
   [[ -n "$peer" ]] || { err "peer required"; return 1; }
-  local grekey; grekey=$(gre_key)
+  [[ -n "$grekey" ]] || grekey=$(gre_key)
   write_gre_unit "iran" "$peer" "$pubip" "$GRE_IRAN_IP" "$grekey" || return 1
   ok "GRE up: $pubip <-> $peer"
   say ""
   say "  ${C_B}GRE key: $grekey${C_N}"
   say "  ${C_DIM}use the same key on the FOREIGN node${C_N}"
-  local bindp; read -rp "frps bind port [7000]: " bindp; bindp=${bindp:-7000}
+  if [[ -z "$bindp" ]]; then read -rp "frps bind port [7000]: " bindp; fi
+  bindp=${bindp:-7000}
   install_frp iran || return 1
-  local frptok; frptok=$(rand 20)
+  [[ -n "$frptok" ]] || frptok=$(rand 20)
   write_frps "$bindp" "$frptok"
   install_panel iran 8090
   install_watchdog
@@ -760,21 +778,37 @@ cmd_install_iran() {
   status_report
 }
 
+# usage: install-foreign --peer IRAN_IP --key N [--port N] [--token STR]
 cmd_install_foreign() {
   need_root; install_deps
   step "FOREIGN node setup"
   local pubip; pubip=$(public_ip)
-  read -rp "iran server IP (GRE peer): " peer
+  local peer="" grekey="" srv="" bp="" tok=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --peer)  peer="$2"; shift 2 ;;
+      --key)   grekey="$2"; shift 2 ;;
+      --port)  bp="$2"; shift 2 ;;
+      --token) tok="$2"; shift 2 ;;
+      *) err "unknown flag: $1"; return 1 ;;
+    esac
+  done
+  if [[ -z "$peer" ]]; then
+    read -rp "iran server IP (GRE peer): " peer
+  fi
   [[ -n "$peer" ]] || { err "peer required"; return 1; }
-  local grekey
-  read -rp "GRE key from the IRAN server: " grekey
+  if [[ -z "$grekey" ]]; then
+    read -rp "GRE key from the IRAN server: " grekey
+  fi
   [[ "$grekey" =~ ^[0-9]+$ ]] || { err "GRE key must be digits (copy it from IRAN)"; return 1; }
   write_gre_unit "foreign" "$peer" "$pubip" "$GRE_FOREIGN_IP" "$grekey" || return 1
   ok "GRE up: $pubip <-> $peer"
-  local srv bp tok
-  read -rp "iran server IP for frpc [same as peer]: " srv; srv=${srv:-$peer}
-  read -rp "frps bind port [7000]: " bp; bp=${bp:-7000}
-  read -rp "frp token: " tok
+  if [[ -z "$srv" ]]; then read -rp "iran server IP for frpc [same as peer]: " srv; fi
+  srv=${srv:-$peer}
+  if [[ -z "$bp" ]]; then read -rp "frps bind port [7000]: " bp; fi
+  bp=${bp:-7000}
+  if [[ -z "$tok" ]]; then read -rp "frp token: " tok; fi
+  [[ -n "$tok" ]] || { err "frp token required (copy it from IRAN)"; return 1; }
   install_frp foreign || return 1
   write_frpc "$srv" "$bp" "$tok"
   install_panel foreign 8091
@@ -791,7 +825,8 @@ case "${1:-menu}" in
   benchmark)       benchmark ;;
   failover)        shift; failover "${1:-auto}" ;;
   status)          status_report ;;
-  panel)           need_root; systemctl restart nash-panel && ok "panel restarted" ;;
+  panel)           need_root; if [[ -f /etc/systemd/system/nash-panel.service ]]; then systemctl restart nash-panel && ok "panel restarted"; else err "panel not installed yet (run install-iran or install-foreign)"; return 1; fi ;;
+  panel-install)   shift; need_root; install_panel "${1:-iran}" "${2:-8090}" ;;
   uninstall)       need_root; uninstall_all ;;
   version|-v|--version) say "Nash Tunnel $VERSION" ;;
   menu|"")         menu ;;
